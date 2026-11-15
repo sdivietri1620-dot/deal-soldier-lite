@@ -1,0 +1,41 @@
+name: Build Windows .exe
+
+on:
+  push:
+    branches: [ main ]          # runs whenever you push to main
+  workflow_dispatch:           # also lets you start it manually
+
+jobs:
+  build-windows-exe:
+    runs-on: windows-latest
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Set up Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '18.x'
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Install pkg globally
+        run: npm install -g pkg
+
+      - name: Build .exe with pkg
+        env:
+          MONGO_URI: ${{ secrets.MONGO_URI }}
+          SCRAPER_API_KEY: ${{ secrets.SCRAPER_API_KEY }}
+        run: |
+          # Write the secrets into a temporary .env file for the build
+          echo "MONGO_URI=${{ secrets.MONGO_URI }}" > .env
+          echo "SCRAPER_API_KEY=${{ secrets.SCRAPER_API_KEY }}" >> .env
+          pkg . --targets node18-win-x64 --output deal-soldier-lite.exe
+
+      - name: Upload artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: deal-soldier-lite-exe
+          path: deal-soldier-lite.exe
